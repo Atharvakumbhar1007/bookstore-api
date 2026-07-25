@@ -20,5 +20,8 @@
   "homepage": "https://github.com/Atharvakumbhar1007/bookstore-api#readme",
   "dependencies": {
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
