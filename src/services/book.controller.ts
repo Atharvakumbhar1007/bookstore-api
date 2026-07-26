@@ -1,0 +1,35 @@
+import { Request, Response } from "express";
+
+import { asyncHandler } from "../utils/asyncHandler";
+
+import { createBookSchema } from "../validators/book.validator";
+
+import { createBook } from "../services/book.service";
+
+export const createBookController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const result = createBookSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        errors: result.error.issues,
+      });
+    }
+
+    const ownerId = (req as any).user.id;
+
+    const book = await createBook(
+      result.data.title,
+      result.data.author,
+      result.data.price,
+      result.data.description,
+      result.data.categoryId,
+      ownerId
+    );
+
+    return res.status(201).json({
+      message: "Book created successfully",
+      book,
+    });
+  }
+);

@@ -1,23 +1,21 @@
 import { Request, Response } from "express";
+
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
+
 import {
   registerUser,
   loginUser,
-} from "../category.service.ts/auth.service";
+  forgotPassword,
+  resetPassword,
+} from "../services/auth.service";
+
 import {
   registerSchema,
   loginSchema,
-} from "../validators/auth.validator";
-import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "../validators/auth.validator";
-
-import {
-  forgotPassword,
-  resetPassword,
-} from "../category.service.ts/auth.service";
 
 export const register = asyncHandler(
   async (req: Request, res: Response) => {
@@ -89,7 +87,7 @@ export const forgotPasswordController = asyncHandler(
 
     const data = await forgotPassword(result.data.email);
 
-    return res.json(data);
+    return res.status(200).json(data);
   }
 );
 
@@ -105,7 +103,7 @@ export const resetPasswordController = asyncHandler(
 
     const token = req.params.token;
 
-    if (!token || Array.isArray(token)) {
+    if (typeof token !== "string") {
       throw new ApiError(400, "Invalid token");
     }
 
@@ -114,6 +112,6 @@ export const resetPasswordController = asyncHandler(
       result.data.password
     );
 
-    return res.json(data);
+    return res.status(200).json(data);
   }
 );

@@ -2,11 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const client_1 = require("@prisma/client");
+const category_controller_1 = require("../controllers/category.controller");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const role_middleware_1 = require("../middleware/role.middleware");
-const category_controller_1 = require("../controllers/category.controller");
+const category_controller_2 = require("../controllers/category.controller");
 const router = (0, express_1.Router)();
-router.get("/", auth_middleware_1.requireAuth, category_controller_1.getAllCategoriesController);
-router.get("/:id", auth_middleware_1.requireAuth, category_controller_1.getCategoryByIdController);
-router.post("/", auth_middleware_1.requireAuth, (0, role_middleware_1.requireRole)(client_1.Role.ADMIN), category_controller_1.createCategoryController);
+router.get("/", auth_middleware_1.requireAuth, category_controller_2.getAllCategoriesController);
+router.get("/:id", auth_middleware_1.requireAuth, category_controller_2.getCategoryByIdController);
+router.post("/", auth_middleware_1.requireAuth, (0, role_middleware_1.requireRole)(client_1.Role.ADMIN), category_controller_2.createCategoryController);
+router.delete("/:id", auth_middleware_1.requireAuth, (0, role_middleware_1.requireRole)(client_1.Role.ADMIN), category_controller_1.deleteCategoryController);
 exports.default = router;

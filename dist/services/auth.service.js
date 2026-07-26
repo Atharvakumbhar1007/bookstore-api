@@ -7,8 +7,8 @@ exports.resetPassword = exports.forgotPassword = exports.loginUser = exports.reg
 const prisma_1 = __importDefault(require("../config/prisma"));
 const hash_1 = require("../utils/hash");
 const jwt_1 = require("../utils/jwt");
-const ApiError_1 = require("../utils/ApiError");
 const token_1 = require("../utils/token");
+const ApiError_1 = require("../utils/ApiError");
 const registerUser = async (name, email, password) => {
     const existingUser = await prisma_1.default.user.findUnique({
         where: {
