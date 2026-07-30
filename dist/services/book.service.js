@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createBook = exports.getAllBooks = void 0;
+exports.getBookById = exports.createBook = exports.getAllBooks = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const ApiError_1 = require("../utils/ApiError");
 const client_1 = require("@prisma/client");
@@ -59,3 +59,25 @@ const createBook = async (title, author, price, description, categoryId, ownerId
     return book;
 };
 exports.createBook = createBook;
+const getBookById = async (id, role, userId) => {
+    const book = await prisma_1.default.book.findUnique({
+        where: {
+            id,
+        },
+        include: {
+            owner: true,
+            category: true,
+        },
+    });
+    if (!book) {
+        throw new ApiError_1.ApiError(404, "Book not found");
+    }
+    if (role === client_1.Role.ADMIN) {
+        return book;
+    }
+    if (book.ownerId !== userId) {
+        throw new ApiError_1.ApiError(403, "Access denied");
+    }
+    return book;
+};
+exports.getBookById = getBookById;

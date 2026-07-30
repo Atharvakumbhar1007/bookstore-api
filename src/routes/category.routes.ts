@@ -8,6 +8,7 @@ import {
   createCategoryController,
   getAllCategoriesController,
   getCategoryByIdController,
+  updateCategoryController,
 } from "../controllers/category.controller";
 
 const router = Router();
@@ -38,10 +39,16 @@ router.post(
 
 requireAuth,
 
-requireRole(Role.ADMIN),
 
 createCategoryController
 
+);
+
+router.put(
+  "/:id",
+  requireAuth,
+  requireRole(Role.ADMIN),
+  updateCategoryController
 );
 
 router.delete(
