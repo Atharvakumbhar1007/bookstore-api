@@ -5,4 +5,5 @@ const auth_middleware_1 = require("../middleware/auth.middleware");
 const book_controller_1 = require("../controllers/book.controller");
 const router = (0, express_1.Router)();
 router.post("/", auth_middleware_1.requireAuth, book_controller_1.createBookController);
+router.get("/", auth_middleware_1.requireAuth, book_controller_1.getAllBooksController);
 exports.default = router;

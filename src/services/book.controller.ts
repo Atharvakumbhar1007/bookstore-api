@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
-
 import { asyncHandler } from "../utils/asyncHandler";
-
 import { createBookSchema } from "../validators/book.validator";
 
-import { createBook } from "../services/book.service";
+import {
+  createBook,
+  getAllBooks,
+} from "../services/book.service";
 
 export const createBookController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -30,6 +31,18 @@ export const createBookController = asyncHandler(
     return res.status(201).json({
       message: "Book created successfully",
       book,
+    });
+  }
+);
+
+export const getAllBooksController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = (req as any).user;
+
+    const books = await getAllBooks(user.role, user.id);
+
+    return res.status(200).json({
+      books,
     });
   }
 );

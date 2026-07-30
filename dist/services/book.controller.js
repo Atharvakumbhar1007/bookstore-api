@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createBookController = void 0;
+exports.getAllBooksController = exports.createBookController = void 0;
 const asyncHandler_1 = require("../utils/asyncHandler");
 const book_validator_1 = require("../validators/book.validator");
 const book_service_1 = require("../services/book.service");
@@ -16,5 +16,12 @@ exports.createBookController = (0, asyncHandler_1.asyncHandler)(async (req, res)
     return res.status(201).json({
         message: "Book created successfully",
         book,
+    });
+});
+exports.getAllBooksController = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    const user = req.user;
+    const books = await (0, book_service_1.getAllBooks)(user.role, user.id);
+    return res.status(200).json({
+        books,
     });
 });
