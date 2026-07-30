@@ -130,3 +130,65 @@ category:true,
 return book;
 
 };
+
+export const getBookById = async (
+
+    id: number,
+
+    role: Role,
+
+    userId: number
+
+) => {
+
+    const book = await prisma.book.findUnique({
+
+        where: {
+
+            id,
+
+        },
+
+        include: {
+
+            owner: true,
+
+            category: true,
+
+        },
+
+    });
+
+    if (!book) {
+
+        throw new ApiError(
+
+            404,
+
+            "Book not found"
+
+        );
+
+    }
+
+    if (role === Role.ADMIN) {
+
+        return book;
+
+    }
+
+    if (book.ownerId !== userId) {
+
+        throw new ApiError(
+
+            403,
+
+            "Access denied"
+
+        );
+
+    }
+
+    return book;
+
+};

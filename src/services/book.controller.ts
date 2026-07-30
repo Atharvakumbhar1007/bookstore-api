@@ -17,7 +17,7 @@ export const createBookController = asyncHandler(
       });
     }
 
-    const ownerId = (req as any).user.id;
+    const ownerId = req.user.id;
 
     const book = await createBook(
       result.data.title,
@@ -37,7 +37,7 @@ export const createBookController = asyncHandler(
 
 export const getAllBooksController = asyncHandler(
   async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = req.user;
 
     const books = await getAllBooks(user.role, user.id);
 
