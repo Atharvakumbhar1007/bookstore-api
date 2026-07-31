@@ -56,3 +56,12 @@ category,
 });
 
 });
+
+export const getProfileController = asyncHandler(
+  async (req: Request, res: Response) => {
+    return res.status(200).json({
+      message: "Profile fetched successfully",
+      user: (req as any).user,
+    });
+  }
+);

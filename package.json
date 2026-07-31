@@ -22,7 +22,6 @@
   "bugs": {
     "url": "https://github.com/Atharvakumbhar1007/bookstore-api/issues"
   },
-  
   "homepage": "https://github.com/Atharvakumbhar1007/bookstore-api#readme",
   "dependencies": {
     "@prisma/client": "^6.19.3",

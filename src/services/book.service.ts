@@ -1,194 +1,236 @@
 import prisma from "../config/prisma";
-import { ApiError } from "../utils/ApiError";
 import { Role } from "@prisma/client";
+import { ApiError } from "../utils/ApiError";
+
+/* ===========================
+   Create Book
+=========================== */
+
+export const createBook = async (
+  title: string,
+  author: string,
+  price: number,
+  description: string | undefined,
+  categoryId: number,
+  ownerId: number
+) => {
+  const category = await prisma.category.findUnique({
+    where: {
+      id: categoryId,
+    },
+  });
+
+  if (!category) {
+    throw new ApiError(404, "Category not found");
+  }
+
+  const book = await prisma.book.create({
+    data: {
+      title,
+      author,
+      price,
+      description,
+      categoryId,
+      ownerId,
+    },
+    include: {
+      owner: true,
+      category: true,
+    },
+  });
+
+  return book;
+};
+
+/* ===========================
+   Get All Books
+=========================== */
 
 export const getAllBooks = async (
-
-    role: Role,
-
-    userId: number
-
+  role: Role,
+  userId: number
 ) => {
-
-    if (role === Role.ADMIN) {
-
-        return await prisma.book.findMany({
-
-            include: {
-
-                owner: true,
-
-                category: true,
-
-            },
-
-            orderBy: {
-
-                createdAt: "desc",
-
-            },
-
-        });
-
-    }
-
-    return await prisma.book.findMany({
-
-        where: {
-
-            ownerId: userId,
-
-        },
-
-        include: {
-
-            owner: true,
-
-            category: true,
-
-        },
-
-        orderBy: {
-
-            createdAt: "desc",
-
-        },
-
+  if (role === Role.ADMIN) {
+    return prisma.book.findMany({
+      include: {
+        owner: true,
+        category: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
+  }
 
+  return prisma.book.findMany({
+    where: {
+      ownerId: userId,
+    },
+    include: {
+      owner: true,
+      category: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 };
-export const createBook = async (
 
-title:string,
-
-author:string,
-
-price:number,
-
-description:string | undefined,
-
-categoryId:number,
-
-ownerId:number
-
-)=>{
-
-const category=
-
-await prisma.category.findUnique({
-
-where:{
-
-id:categoryId
-
-}
-
-});
-
-if(!category){
-
-throw new ApiError(
-
-404,
-
-"Category not found"
-
-);
-
-}
-
-const book=
-
-await prisma.book.create({
-
-data:{
-
-title,
-
-author,
-
-price,
-
-description,
-
-ownerId,
-
-categoryId,
-
-},
-
-include:{
-
-owner:true,
-
-category:true,
-
-},
-
-});
-
-return book;
-
-};
+/* ===========================
+   Get Book By ID
+=========================== */
 
 export const getBookById = async (
-
-    id: number,
-
-    role: Role,
-
-    userId: number
-
+  id: number,
+  role: Role,
+  userId: number
 ) => {
+  const book = await prisma.book.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      owner: true,
+      category: true,
+    },
+  });
 
-    const book = await prisma.book.findUnique({
+  if (!book) {
+    throw new ApiError(404, "Book not found");
+  }
 
-        where: {
+  if (role !== Role.ADMIN && book.ownerId !== userId) {
+    throw new ApiError(403, "Access denied");
+  }
 
-            id,
+  return book;
+};
 
-        },
+/* ===========================
+   Update Book
+=========================== */
 
-        include: {
+export const updateBook = async (
+  id: number,
+  title: string,
+  author: string,
+  price: number,
+  description: string | undefined,
+  categoryId: number,
+  role: Role,
+  userId: number
+) => {
+  const book = await prisma.book.findUnique({
+    where: {
+      id,
+    },
+  });
 
-            owner: true,
+  if (!book) {
+    throw new ApiError(404, "Book not found");
+  }
 
-            category: true,
+  if (role !== Role.ADMIN && book.ownerId !== userId) {
+    throw new ApiError(403, "Access denied");
+  }
 
-        },
+  return prisma.book.update({
+    where: {
+      id,
+    },
+    data: {
+      title,
+      author,
+      price,
+      description,
+      categoryId,
+    },
+    include: {
+      owner: true,
+      category: true,
+    },
+  });
+};
 
+/* ===========================
+   Delete Book
+=========================== */
+
+export const deleteBook = async (
+  id: number,
+  role: Role,
+  userId: number
+) => {
+  const book = await prisma.book.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!book) {
+    throw new ApiError(404, "Book not found");
+  }
+
+  if (role !== Role.ADMIN && book.ownerId !== userId) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  await prisma.book.delete({
+    where: {
+      id,
+    },
+  });
+
+  return {
+    message: "Book deleted successfully",
+  };
+};
+
+/* ===========================
+   Get Books By Category
+=========================== */
+
+export const getBooksByCategory = async (
+  categoryId: number,
+  role: Role,
+  userId: number
+) => {
+  const category = await prisma.category.findUnique({
+    where: {
+      id: categoryId,
+    },
+  });
+
+  if (!category) {
+    throw new ApiError(404, "Category not found");
+  }
+
+  if (role === Role.ADMIN) {
+    return prisma.book.findMany({
+      where: {
+        categoryId,
+      },
+      include: {
+        owner: true,
+        category: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
+  }
 
-    if (!book) {
-
-        throw new ApiError(
-
-            404,
-
-            "Book not found"
-
-        );
-
-    }
-
-    if (role === Role.ADMIN) {
-
-        return book;
-
-    }
-
-    if (book.ownerId !== userId) {
-
-        throw new ApiError(
-
-            403,
-
-            "Access denied"
-
-        );
-
-    }
-
-    return book;
-
+  return prisma.book.findMany({
+    where: {
+      categoryId,
+      ownerId: userId,
+    },
+    include: {
+      owner: true,
+      category: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 };
