@@ -120,36 +120,65 @@ export const updateBook = async (
   role: Role,
   userId: number
 ) => {
-  const book = await prisma.book.findUnique({
-    where: {
-      id,
-    },
-  });
+  try {
+    console.log("========== UPDATE BOOK ==========");
+    console.log("Book ID:", id);
+    console.log("Role:", role);
+    console.log("User ID:", userId);
+    console.log("Category ID:", categoryId);
 
-  if (!book) {
-    throw new ApiError(404, "Book not found");
+    const book = await prisma.book.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    console.log("Book Found:", book);
+
+    if (!book) {
+      throw new ApiError(404, "Book not found");
+    }
+
+    if (role !== Role.ADMIN && book.ownerId !== userId) {
+      throw new ApiError(403, "Access denied");
+    }
+
+    const category = await prisma.category.findUnique({
+      where: {
+        id: categoryId,
+      },
+    });
+
+    console.log("Category Found:", category);
+
+    if (!category) {
+      throw new ApiError(404, "Category not found");
+    }
+
+    const updatedBook = await prisma.book.update({
+      where: {
+        id,
+      },
+      data: {
+        title,
+        author,
+        price,
+        description,
+        categoryId,
+      },
+      include: {
+        owner: true,
+        category: true,
+      },
+    });
+
+    console.log("Updated Book:", updatedBook);
+
+    return updatedBook;
+  } catch (error) {
+    console.error("UPDATE BOOK ERROR:", error);
+    throw error;
   }
-
-  if (role !== Role.ADMIN && book.ownerId !== userId) {
-    throw new ApiError(403, "Access denied");
-  }
-
-  return prisma.book.update({
-    where: {
-      id,
-    },
-    data: {
-      title,
-      author,
-      price,
-      description,
-      categoryId,
-    },
-    include: {
-      owner: true,
-      category: true,
-    },
-  });
 };
 
 /* ===========================
