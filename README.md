@@ -19,7 +19,7 @@ A RESTful backend API for managing a bookstore — built with **Node.js**, **Exp
 | Layer          | Technology              |
 |----------------|--------------------------|
 | Runtime        | Node.js (v18+)          |
-| Language       | TypeScript               |
+| Language       | TypeScript (strict mode) |
 | Framework      | Express 5                |
 | ORM            | Prisma                   |
 | Database       | SQLite                   |
@@ -46,7 +46,7 @@ src/
 prisma/
 ├── schema.prisma    # Database schema (User, Book, Category)
 ├── migrations/      # Migration history
-└── seed.ts          # Admin user seed
+└── seed.ts          # Admin user + category seed
 ```
 
 ## 🚀 Getting Started
@@ -66,12 +66,18 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file in the project root:
+Copy the example file and edit as needed:
+
+```bash
+cp .env.example .env
+```
+
+The `.env` file should contain:
 
 ```env
 DATABASE_URL="file:./dev.db"
 JWT_SECRET="your-strong-secret-key"
-JWT_EXPIRES_IN="1d"
+JWT_EXPIRES_IN="1h"
 PORT=5000
 ```
 
@@ -82,8 +88,12 @@ PORT=5000
 ```bash
 npm run prisma:generate   # Generate Prisma client
 npm run prisma:migrate    # Run migrations (creates SQLite DB)
-npm run prisma:seed       # Seed admin user (admin@bookstore.com / admin123)
+npm run prisma:seed       # Seed admin user + categories
 ```
+
+**Seeded admin credentials:** `admin@bookstore.com` / `admin123`
+
+**Seeded categories:** Fiction, Non-Fiction, Science, Technology, History, Biography
 
 ### Running the App
 
@@ -108,13 +118,13 @@ npm run prisma:studio     # Open Prisma Studio (visual DB browser)
 
 ### Authentication — `/api/auth`
 
-| Method | Route                          | Description                       | Auth Required |
-|--------|--------------------------------|-----------------------------------|---------------|
-| POST   | `/api/auth/register`           | Register a new user               | ❌            |
-| POST   | `/api/auth/login`              | Log in and receive a JWT token    | ❌            |
-| POST   | `/api/auth/logout`             | Logout (client discards token)    | ✅            |
-| POST   | `/api/auth/forgot-password`    | Generate a password reset token   | ❌            |
-| POST   | `/api/auth/reset-password/:token` | Reset password with token      | ❌            |
+| Method | Route                             | Description                       | Auth Required |
+|--------|-----------------------------------|-----------------------------------|---------------|
+| POST   | `/api/auth/register`              | Register a new user               | ❌            |
+| POST   | `/api/auth/login`                 | Log in and receive a JWT token    | ❌            |
+| POST   | `/api/auth/logout`                | Logout (client discards token)    | ✅            |
+| POST   | `/api/auth/forgot-password`       | Generate a password reset token   | ❌            |
+| POST   | `/api/auth/reset-password/:token` | Reset password with token         | ❌            |
 
 ### Books — `/api/books`
 
@@ -135,7 +145,7 @@ npm run prisma:studio     # Open Prisma Studio (visual DB browser)
 | GET    | `/api/categories/:id/books`    | Get books in a category            | ✅            | Any   |
 | POST   | `/api/categories`              | Create a category                  | ✅            | ADMIN |
 | PUT    | `/api/categories/:id`          | Update a category                  | ✅            | ADMIN |
-| DELETE | `/api/categories/:id`          | Delete a category (no books)       | ✅            | ADMIN |
+| DELETE | `/api/categories/:id`          | Delete a category (blocked if books exist — returns 409) | ✅ | ADMIN |
 
 ### Users — `/api/users`
 
@@ -153,6 +163,157 @@ Include the JWT token in all protected requests:
 ```
 Authorization: Bearer <your_jwt_token>
 ```
+
+---
+
+## 📋 Example Requests (curl)
+
+> Replace `<TOKEN>` with the JWT returned from the login endpoint.
+
+### Auth
+
+**Register a new user:**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Doe", "email": "john@example.com", "password": "password123"}'
+```
+
+**Login:**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@bookstore.com", "password": "admin123"}'
+```
+
+**Logout:**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/logout \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Forgot password:**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com"}'
+```
+
+**Reset password** (use the token from forgot-password response):
+
+```bash
+curl -X POST http://localhost:5000/api/auth/reset-password/<RESET_TOKEN> \
+  -H "Content-Type: application/json" \
+  -d '{"password": "newpassword123"}'
+```
+
+### Books
+
+**Create a book:**
+
+```bash
+curl -X POST http://localhost:5000/api/books \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "price": 12.99, "description": "A classic novel", "categoryId": 1}'
+```
+
+**List all books** (admin sees all; users see their own):
+
+```bash
+curl http://localhost:5000/api/books \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Get a single book:**
+
+```bash
+curl http://localhost:5000/api/books/1 \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Update a book:**
+
+```bash
+curl -X PUT http://localhost:5000/api/books/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"title": "The Great Gatsby (Updated)", "author": "F. Scott Fitzgerald", "price": 14.99, "categoryId": 1}'
+```
+
+**Delete a book:**
+
+```bash
+curl -X DELETE http://localhost:5000/api/books/1 \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### Categories
+
+**List all categories:**
+
+```bash
+curl http://localhost:5000/api/categories \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Get a single category:**
+
+```bash
+curl http://localhost:5000/api/categories/1 \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Get books in a category:**
+
+```bash
+curl http://localhost:5000/api/categories/1/books \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Create a category** (admin only):
+
+```bash
+curl -X POST http://localhost:5000/api/categories \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"name": "Romance"}'
+```
+
+**Update a category** (admin only):
+
+```bash
+curl -X PUT http://localhost:5000/api/categories/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"name": "Literary Fiction"}'
+```
+
+**Delete a category** (admin only — fails with 409 if books are assigned):
+
+```bash
+curl -X DELETE http://localhost:5000/api/categories/1 \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+---
+
+## 🗑️ Category Deletion Policy
+
+Deleting a category that still has books assigned to it is **blocked**. The API returns a `409 Conflict` error:
+
+```json
+{
+  "success": false,
+  "message": "Cannot delete category because books are assigned to it"
+}
+```
+
+Reassign or delete the books first, then delete the category.
 
 ---
 
