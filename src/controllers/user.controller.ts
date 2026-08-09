@@ -1,67 +1,28 @@
 import { Request, Response } from "express";
 
 import { asyncHandler } from "../utils/asyncHandler";
-
-import { CategorySchema } from "../validators/category.validator";
-
-import { createCategory } from "../services/category.service";
-
-export const createCategoryController =
-asyncHandler(
-
-async (
-
-req: Request,
-
-res: Response
-
-)=>{
-
-const result=
-
-CategorySchema.safeParse(
-
-req.body
-
-);
-
-if(!result.success){
-
-return res.status(400).json({
-
-errors:
-
-result.error.issues,
-
-});
-
-}
-
-const category=
-
-await createCategory(
-
-result.data.name
-
-);
-
-return res.status(201).json({
-
-message:
-
-"Category created successfully",
-
-category,
-
-});
-
-});
+import { ApiError } from "../utils/ApiError";
+import { getUserById, getAllUsers } from "../services/user.service";
 
 export const getProfileController = asyncHandler(
   async (req: Request, res: Response) => {
+    const user = await getUserById((req as any).user.id);
+
     return res.status(200).json({
       message: "Profile fetched successfully",
-      user: (req as any).user,
+      user,
+    });
+  }
+);
+
+export const getAllUsersController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const users = await getAllUsers();
+
+    return res.status(200).json({
+      message: "Users fetched successfully",
+      count: users.length,
+      users,
     });
   }
 );

@@ -4,24 +4,25 @@ A RESTful backend API for managing a bookstore — built with **Node.js**, **Exp
 
 ## ✨ Features
 
-- 🔐 **Authentication** — user registration & login with JWT-based sessions
-- 🛡️ **Role-based access control** — middleware-enforced permissions for protected routes
-- 📖 **Book management** — full CRUD for books
-- 🏷️ **Category management** — full CRUD for categories
-- 👤 **User management** — user-related endpoints
+- 🔐 **Authentication** — user registration & login with JWT-based sessions, forgot/reset password
+- 🛡️ **Role-based access control** — `USER` and `ADMIN` roles with middleware-enforced permissions
+- 📖 **Book management** — full CRUD; users manage their own books, admins see all
+- 🏷️ **Category management** — full CRUD for categories (admin-only write operations)
+- 👤 **User management** — profile endpoint for all users, user list for admins
 - ✅ **Request validation** — schema validation via Zod on all inputs
-- 🔒 **Password security** — hashing with bcrypt
+- 🔒 **Password security** — hashing with bcrypt (10 rounds)
 - ⚠️ **Centralized error handling** — consistent API error responses
-- 🗄️ **Prisma ORM** — type-safe database access with easy migrations
+- 🗄️ **Prisma ORM** — type-safe SQLite database access with migrations
 
 ## 🛠️ Tech Stack
 
 | Layer          | Technology              |
 |----------------|--------------------------|
-| Runtime        | Node.js                 |
+| Runtime        | Node.js (v18+)          |
 | Language       | TypeScript               |
 | Framework      | Express 5                |
 | ORM            | Prisma                   |
+| Database       | SQLite                   |
 | Auth           | JSON Web Tokens (JWT)    |
 | Validation     | Zod                      |
 | Password Hash  | bcrypt                   |
@@ -32,25 +33,27 @@ A RESTful backend API for managing a bookstore — built with **Node.js**, **Exp
 ```
 src/
 ├── config/          # Prisma client setup
-├── controllers/      # Request handlers
-├── middleware/        # Auth, role, and error-handling middleware
-├── routes/            # Express route definitions
-├── services/          # Business logic / DB operations
-├── types/             # Shared TypeScript types
-├── utils/              # Helpers (JWT, hashing, async wrapper, custom errors)
-├── validators/         # Zod validation schemas
-├── app.ts             # Express app setup
-└── server.ts           # Entry point
+├── controllers/     # Request handlers (auth, book, category, user)
+├── middleware/      # Auth, role, and error-handling middleware
+├── routes/          # Express route definitions
+├── services/        # Business logic / DB operations
+├── types/           # Shared TypeScript type extensions
+├── utils/           # Helpers (JWT, hashing, asyncHandler, ApiError, token)
+├── validators/      # Zod validation schemas
+├── app.ts           # Express app setup
+└── server.ts        # Entry point
 
 prisma/
-└── schema.prisma       # Database schema
+├── schema.prisma    # Database schema (User, Book, Category)
+├── migrations/      # Migration history
+└── seed.ts          # Admin user seed
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js (v18+ recommended)
+- Node.js v18+
 - npm
 
 ### Installation
@@ -66,16 +69,20 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-DATABASE_URL="your-database-connection-string"
-JWT_SECRET="your-jwt-secret"
-PORT=3000
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="your-strong-secret-key"
+JWT_EXPIRES_IN="1d"
+PORT=5000
 ```
+
+> ⚠️ **Change `JWT_SECRET` to a long, random string before deploying.**
 
 ### Database Setup
 
 ```bash
 npm run prisma:generate   # Generate Prisma client
-npm run prisma:migrate    # Run migrations
+npm run prisma:migrate    # Run migrations (creates SQLite DB)
+npm run prisma:seed       # Seed admin user (admin@bookstore.com / admin123)
 ```
 
 ### Running the App
@@ -95,21 +102,59 @@ npm start
 npm run prisma:studio     # Open Prisma Studio (visual DB browser)
 ```
 
+---
+
 ## 📡 API Endpoints
 
-| Method | Route                | Description                  | Auth Required |
-|--------|-----------------------|-------------------------------|----------------|
-| POST   | `/api/auth/register`  | Register a new user          | ❌             |
-| POST   | `/api/auth/login`     | Log in and receive a JWT     | ❌             |
-| GET    | `/api/books`           | List all books                | ❌             |
-| POST   | `/api/books`           | Create a new book             | ✅             |
-| PUT    | `/api/books/:id`       | Update a book                 | ✅             |
-| DELETE | `/api/books/:id`       | Delete a book                 | ✅             |
-| GET    | `/api/categories`      | List all categories           | ❌             |
-| POST   | `/api/categories`      | Create a category             | ✅             |
-| GET    | `/api/users`            | List/manage users             | ✅ (admin)     |
+### Authentication — `/api/auth`
 
-> Exact paths/params may vary — check `src/routes/` for the source of truth.
+| Method | Route                          | Description                       | Auth Required |
+|--------|--------------------------------|-----------------------------------|---------------|
+| POST   | `/api/auth/register`           | Register a new user               | ❌            |
+| POST   | `/api/auth/login`              | Log in and receive a JWT token    | ❌            |
+| POST   | `/api/auth/logout`             | Logout (client discards token)    | ✅            |
+| POST   | `/api/auth/forgot-password`    | Generate a password reset token   | ❌            |
+| POST   | `/api/auth/reset-password/:token` | Reset password with token      | ❌            |
+
+### Books — `/api/books`
+
+| Method | Route              | Description                              | Auth Required |
+|--------|--------------------|------------------------------------------|---------------|
+| GET    | `/api/books`       | List books (own books; admin sees all)   | ✅            |
+| POST   | `/api/books`       | Create a new book                        | ✅            |
+| GET    | `/api/books/:id`   | Get book by ID                           | ✅            |
+| PUT    | `/api/books/:id`   | Update a book (owner or admin)           | ✅            |
+| DELETE | `/api/books/:id`   | Delete a book (owner or admin)           | ✅            |
+
+### Categories — `/api/categories`
+
+| Method | Route                          | Description                        | Auth Required | Role  |
+|--------|--------------------------------|------------------------------------|---------------|-------|
+| GET    | `/api/categories`              | List all categories                | ✅            | Any   |
+| GET    | `/api/categories/:id`          | Get category by ID                 | ✅            | Any   |
+| GET    | `/api/categories/:id/books`    | Get books in a category            | ✅            | Any   |
+| POST   | `/api/categories`              | Create a category                  | ✅            | ADMIN |
+| PUT    | `/api/categories/:id`          | Update a category                  | ✅            | ADMIN |
+| DELETE | `/api/categories/:id`          | Delete a category (no books)       | ✅            | ADMIN |
+
+### Users — `/api/users`
+
+| Method | Route                | Description                   | Auth Required | Role  |
+|--------|----------------------|-------------------------------|---------------|-------|
+| GET    | `/api/users/profile` | Get current user's profile    | ✅            | Any   |
+| GET    | `/api/users`         | List all users                | ✅            | ADMIN |
+
+---
+
+## 🔑 Authentication
+
+Include the JWT token in all protected requests:
+
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+---
 
 ## 🤝 Contributing
 
@@ -121,5 +166,5 @@ This project is available under the [MIT License](LICENSE).
 
 ## 👤 Author
 
-**Atharva Kumbhar**
+**Atharva Kumbhar**  
 [GitHub](https://github.com/Atharvakumbhar1007)

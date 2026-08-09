@@ -19,6 +19,12 @@ const createBook = async (title, author, price, description, categoryId, ownerId
     if (!category) {
         throw new ApiError_1.ApiError(404, "Category not found");
     }
+    const ownerSelect = {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+    };
     const book = await prisma_1.default.book.create({
         data: {
             title,
@@ -29,7 +35,7 @@ const createBook = async (title, author, price, description, categoryId, ownerId
             ownerId,
         },
         include: {
-            owner: true,
+            owner: { select: ownerSelect },
             category: true,
         },
     });
@@ -40,10 +46,16 @@ exports.createBook = createBook;
    Get All Books
 =========================== */
 const getAllBooks = async (role, userId) => {
+    const ownerSelect = {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+    };
     if (role === client_1.Role.ADMIN) {
         return prisma_1.default.book.findMany({
             include: {
-                owner: true,
+                owner: { select: ownerSelect },
                 category: true,
             },
             orderBy: {
@@ -56,7 +68,7 @@ const getAllBooks = async (role, userId) => {
             ownerId: userId,
         },
         include: {
-            owner: true,
+            owner: { select: ownerSelect },
             category: true,
         },
         orderBy: {
@@ -69,12 +81,18 @@ exports.getAllBooks = getAllBooks;
    Get Book By ID
 =========================== */
 const getBookById = async (id, role, userId) => {
+    const ownerSelect = {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+    };
     const book = await prisma_1.default.book.findUnique({
         where: {
             id,
         },
         include: {
-            owner: true,
+            owner: { select: ownerSelect },
             category: true,
         },
     });
@@ -102,7 +120,21 @@ const updateBook = async (id, title, author, price, description, categoryId, rol
     if (role !== client_1.Role.ADMIN && book.ownerId !== userId) {
         throw new ApiError_1.ApiError(403, "Access denied");
     }
-    return prisma_1.default.book.update({
+    const category = await prisma_1.default.category.findUnique({
+        where: {
+            id: categoryId,
+        },
+    });
+    if (!category) {
+        throw new ApiError_1.ApiError(404, "Category not found");
+    }
+    const ownerSelect = {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+    };
+    const updatedBook = await prisma_1.default.book.update({
         where: {
             id,
         },
@@ -114,10 +146,11 @@ const updateBook = async (id, title, author, price, description, categoryId, rol
             categoryId,
         },
         include: {
-            owner: true,
+            owner: { select: ownerSelect },
             category: true,
         },
     });
+    return updatedBook;
 };
 exports.updateBook = updateBook;
 /* ===========================
@@ -157,13 +190,19 @@ const getBooksByCategory = async (categoryId, role, userId) => {
     if (!category) {
         throw new ApiError_1.ApiError(404, "Category not found");
     }
+    const ownerSelect = {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+    };
     if (role === client_1.Role.ADMIN) {
         return prisma_1.default.book.findMany({
             where: {
                 categoryId,
             },
             include: {
-                owner: true,
+                owner: { select: ownerSelect },
                 category: true,
             },
             orderBy: {
@@ -177,7 +216,7 @@ const getBooksByCategory = async (categoryId, role, userId) => {
             ownerId: userId,
         },
         include: {
-            owner: true,
+            owner: { select: ownerSelect },
             category: true,
         },
         orderBy: {
